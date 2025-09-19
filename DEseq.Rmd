@@ -1,0 +1,55 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-06-27"
+---
+
+```{r}
+library("DESeq2")
+library("tximport")
+library("dplyr")
+#library("reader")
+```
+
+```{r}
+samples <- read.table("../data/samples.txt", header=TRUE) %>%
+  mutate(condition = as.factor(condition))
+samples
+```
+
+```{r}
+tx2gene <- read.table("../data/gencode.v48.metadata.HGNC.gz") %>%
+  select(-V3) %>% dplyr::rename(TXNAME=V1, GENEID=V2)
+tx2gene
+```
+
+```{r}
+files <- file.path("../views", samples$run, "quant.sf")
+names(files) <- samples$run
+files
+```
+
+```{r}
+txi <- tximport(files, type="salmon", tx2gene=tx2gene, ignoreAfterBar = T)
+ddsTxi <- DESeqDataSetFromTximport(txi,
+                                  colData = samples,
+                                  design = ~condition)
+```
+
+```{r}
+dds <- DESeq(ddsTxi)
+resultsNames(dds)
+res <- results(dds, name="condition_B_vs_A")
+table <- as.data.frame(res)
+table
+```
+
+```{r}
+saveRDS(table, file = "../results/final_table.rds")
+```
+
+```{r}
+res <- readRDS("../results/final_table.rds")
+res
+```
+
